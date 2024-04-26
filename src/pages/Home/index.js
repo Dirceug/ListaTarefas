@@ -41,15 +41,29 @@ const COLORS = {
   verde: '#CCFF33',
 };
 
+const colors = [
+  '#ffffff',
+  '#f3f0c6',
+  '#77dd77',
+  '#fdcae1',
+  '#ff6961',
+  '#c5c6c8',
+];
+
 function Home(): React.JSX.Element {
   const [textInput, setTextInput] = React.useState('')
   const [todos, setTodos] = React.useState([
 
   ]);
+  const [tarefaSelecionada, setTarefaSelecionada] = React.useState([
+
+  ]);
+
   const navigation = useNavigation();
 
   React.useEffect(() => {
     getTodosFromUserDevice()
+    console.log(todos)
   }, [])
 
   React.useEffect(() => {
@@ -60,7 +74,7 @@ function Home(): React.JSX.Element {
   const ListItem = ({todo}) => {
     return (
       <Animatable.View 
-        style={styles.listItem}
+        style={[styles.listItem,  { backgroundColor: todo?.color }]}
         animation="fadeInRight"
         // delay={500}
       >
@@ -68,25 +82,25 @@ function Home(): React.JSX.Element {
           <Text
             style={{
               fontWeight: 'bold',
-              fontSize: 18,
+              fontSize: 22,
               color: COLORS.primary,
               textDecorationLine: todo?.completed ? 'line-through' : 'none',
             }}>
             {todo?.task}
           </Text>
+          <Text
+            style={{
+              fontWeight: 'bold',
+              fontSize: 16,
+              color: COLORS.primary,
+              textDecorationLine: todo?.completed ? 'line-through' : 'none',
+            }}>
+            {todo?.description}
+          </Text>
         </View>
         <TouchableOpacity
           style={styles.editIcon} 
           onPress={() => editDoto(todo?.id) } 
-          onPress={ () => props.navigation.navigate('Detalhes'
-          // , { 
-          //   id: 01, 
-          //   title: 'teste', 
-          //   completed: false,
-          //   description: "testando a passagem de props",
-          //   color: "red"
-          // }
-        )}
         >
           <FontAwesomeIcon icon={faPenToSquare} color={COLORS.white} size={15} />
         </TouchableOpacity>
@@ -111,6 +125,20 @@ function Home(): React.JSX.Element {
       await AsyncStorage.setItem('todos', stringfyTodos);
     } catch (e) {
       console.log(e)
+    }
+  }
+
+  const saveTarefaSelecionada = async tarefaSelecionada => {
+    if (tarefaSelecionada){
+      try {
+        const stringfyTarefas = JSON.stringify(tarefaSelecionada);
+        await AsyncStorage.setItem('selecionada', stringfyTarefas);
+        console.log(tarefaSelecionada)
+      } catch (e) {
+        console.log(e)
+      }
+    } else {
+      console.log('Não há tarefa selecionada ainda')
     }
   }
 
@@ -143,7 +171,6 @@ function Home(): React.JSX.Element {
   }
 
   const markTodoComplete = (todoId) => {
-    console.log(todoId);
     const newTodos = todos.map((item) => {
       if(item.id === todoId) {
         return{...item, completed: true}
@@ -158,9 +185,18 @@ function Home(): React.JSX.Element {
     setTodos(newTodos)
   }
 
-  const editDoto = (todoId) => {
-    const newTodos = todos.filter(item => item.id != todoId)
-    setTodos(newTodos)
+  const editDoto = async (todoId) => {
+    const tarefaSelecionada = todos.filter(item => item.id == todoId )[0]
+    setTarefaSelecionada(tarefaSelecionada)
+    try{
+      await saveTarefaSelecionada(tarefaSelecionada)
+      console.log("Tarefa selecionada2" + tarefaSelecionada.task)
+      console.log("todos")
+      console.log(todos)
+      navigation.navigate('Editar', {tarefaSelecionada})
+    } catch(e){
+      console.log(e)
+    }
   }
 
   const clearTodos = () => {
@@ -197,17 +233,16 @@ function Home(): React.JSX.Element {
         renderItem={({item}) => <ListItem todo={item} />}
       />
       
-      <View></View>
       <View style={styles.footer}>
-        <View style={styles.inputContainer}>
+        {/* <View style={styles.inputContainer}>
           <TextInput 
             placeholder="Adiconar Tarefa" 
             value={textInput}
             onChangeText={(text)=>setTextInput(text)} 
 
           />
-        </View>
-        <TouchableOpacity onPress={addTodo} >
+        </View> */}
+        <TouchableOpacity onPress={ () => navigation.navigate('Criar')} >
           <View style={styles.iconContainer}>
             <FontAwesomeIcon icon={faPlus} color={COLORS.white} size={30} />
           </View>
@@ -276,6 +311,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     backgroundColor: COLORS.laranja,
+    marginRight: 20,
+    // borderRadius: 30,
+    padding: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   inputContainer: {
     backgroundColor: COLORS.white,

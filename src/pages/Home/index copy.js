@@ -41,12 +41,11 @@ const COLORS = {
   verde: '#CCFF33',
 };
 
-export default function Detalhes() {
+function Home(): React.JSX.Element {
   const [textInput, setTextInput] = React.useState('')
   const [todos, setTodos] = React.useState([
 
   ]);
-
   const [tarefaSelecionada, setTarefaSelecionada] = React.useState([
 
   ]);
@@ -54,24 +53,13 @@ export default function Detalhes() {
   const navigation = useNavigation();
 
   React.useEffect(() => {
-    selecinada()
+    getTodosFromUserDevice()
   }, [])
 
   React.useEffect(() => {
-    const getTarefaSelecionada = async () => {
-      try {
-        const tarefaSelecionadaString = await AsyncStorage.getItem('selecionada');
-        if (tarefaSelecionadaString !== null) {
-          const tarefaSelecionada = JSON.parse(tarefaSelecionadaString);
-          setTarefaSelecionada(tarefaSelecionada);
-        }
-      } catch (error) {
-        console.log(error);
-      }
-    };
-    getTarefaSelecionada();
-  }, []);
-  
+    saveTodoToUserDevice(todos)
+  }, [todos] )
+
 
   const ListItem = ({todo}) => {
     return (
@@ -84,15 +72,28 @@ export default function Detalhes() {
           <Text
             style={{
               fontWeight: 'bold',
-              fontSize: 18,
+              fontSize: 22,
               color: COLORS.primary,
               textDecorationLine: todo?.completed ? 'line-through' : 'none',
             }}>
-           {selecionada}liyffx
-           {todos.id}
-           {todos}
+            {todo?.task}
+          </Text>
+          <Text
+            style={{
+              fontWeight: 'bold',
+              fontSize: 16,
+              color: COLORS.primary,
+              textDecorationLine: todo?.completed ? 'line-through' : 'none',
+            }}>
+            {todo?.task}
           </Text>
         </View>
+        <TouchableOpacity
+          style={styles.editIcon} 
+          onPress={() => editDoto(todo?.id) } 
+        >
+          <FontAwesomeIcon icon={faPenToSquare} color={COLORS.white} size={15} />
+        </TouchableOpacity>
         {
           !todo?.completed && (
             <TouchableOpacity style={styles.checkIcon} onPress={()=> markTodoComplete(todo?.id)} >
@@ -108,23 +109,54 @@ export default function Detalhes() {
     );
   };
 
-  const addDescricao = () => {
-    console.log(tarefaselecionada)
-    if(textInput == '') {
-      Alert.alert("Adicione uma descrição")
-    } else if (todos.length > 0 ){
-        const updateTarefaSelecionada = {...tarefaSelecionada, description: textInput}
-        const updateTodos = todos.map((todo) => {
-            if(todo.id === tarefaselecionada.id) {
-                return updateTarefaSelecionada
-            }
-            return todo
-        })
-      setTodos(updateTodos)
-      setTextInput('')
-      console.log(updateTodos)
+  const saveTodoToUserDevice = async todos => {
+    try {
+      const stringfyTodos = JSON.stringify(todos);
+      await AsyncStorage.setItem('todos', stringfyTodos);
+    } catch (e) {
+      console.log(e)
+    }
+  }
+
+  const saveTarefaSelecionada = async tarefaSelecionada => {
+    if (tarefaSelecionada){
+      try {
+        const stringfyTarefas = JSON.stringify(tarefaSelecionada);
+        await AsyncStorage.setItem('selecionada', stringfyTarefas);
+        console.log(tarefaSelecionada)
+      } catch (e) {
+        console.log(e)
+      }
     } else {
-        console.log('Nenhuma tarefa encontrada')
+      console.log('Não há tarefa selecionada ainda')
+    }
+  }
+
+  const getTodosFromUserDevice = async () => {
+    try {
+      const todos = await AsyncStorage.getItem('todos');
+      if(todos != null) {
+        setTodos(JSON.parse(todos));
+      }
+    } catch (error) {
+      console.log(error)
+    }
+  }
+
+  const addTodo = () => {
+    if(textInput == '') {
+      Alert.alert("Adicione um Título")
+    } else {
+
+      const newTodo = {
+        id: Math.random(),
+        task: textInput,
+        completed: false,
+        description: "",
+        color: ""
+      };
+      setTodos([...todos, newTodo])
+      setTextInput('')
     }
   }
 
@@ -144,10 +176,17 @@ export default function Detalhes() {
     setTodos(newTodos)
   }
 
-  const editDoto = (todoId) => {
-    const newTodos = todos.filter(item => item.id != todoId)
-    setTodos(newTodos)
-    console.log(newTodos)
+  const editDoto = async (todoId) => {
+    const tarefaSelecionada = todos.filter(item => item.id == todoId )[0]
+    console.log('Tarefa selecionada: ')
+    console.log(tarefaSelecionada)
+    setTarefaSelecionada(tarefaSelecionada)
+    try{
+      await saveTarefaSelecionada(tarefaSelecionada)
+      navigation.navigate('Detalhes', {tarefaSelecionada})
+    } catch(e){
+      console.log(e)
+    }
   }
 
   const clearTodos = () => {
@@ -161,71 +200,40 @@ export default function Detalhes() {
   ])
   }
 
-  const selecinada = async () => {
-    try {
-      const todos = await AsyncStorage.getItem('selecionada');
-      if(todos != null) {
-        setTodos(JSON.parse(todos));
-      }
-    } catch (error) {
-      console.log(error)
-    }
-  }
-
   return (
-    
     <SafeAreaView style={{flex: 1, backgroundColor: COLORS.white}}>
       <Animatable.View 
         style={styles.header}
         animation="fadeInLeft"
+        // delay={500}
       >
         <Text style={{fontWeight: 'bold', fontSize: 30, color: COLORS.primary}}>
-          Detalhes
+          TODO APP
         </Text>
-
-      </Animatable.View>
-        <Animatable.View 
-            style={styles.listItem}
-            animation="fadeInRight"
-            // delay={500}
-        >
-        <View style={styles.item}>
-            <Text
-                style={{
-                fontWeight: 'bold',
-                fontSize: 18,
-                color: COLORS.primary,
-                }}>klylkjf
-                    {tarefaSelecionada}
-            </Text>
-            {/* <Text>{props.route.params.description}lyf</Text> */}
-            <Text>{tarefaSelecionada.task}</Text>
-            <Text>{tarefaSelecionada}</Text>
+        <TouchableOpacity onPress={clearTodos} >
+        <View>
+        <FontAwesomeIcon icon={faTrashCan} size={30} color="#ff0000"/>
         </View>
-        {
-          (
-            <TouchableOpacity style={styles.checkIcon} onPress={()=> markTodoComplete(todo?.id)} >
-              <FontAwesomeIcon icon={faCheck} color={COLORS.white} size={15} />
-            </TouchableOpacity>
-          )
-        }
-        <TouchableOpacity
-          style={styles.deleteIcon} onPress={() => deleteDoto(todo?.id) } >
-          <FontAwesomeIcon icon={faTrashCan} color={COLORS.white} size={15} />
         </TouchableOpacity>
       </Animatable.View>
+      <FlatList
+        showVerticalScrollIndicator={false}
+        contentContainerStyle={{padding: 20, paddingBottom: 100}}
+        data={todos}
+        renderItem={({item}) => <ListItem todo={item} />}
+      />
       
       <View></View>
       <View style={styles.footer}>
         <View style={styles.inputContainer}>
           <TextInput 
-            placeholder="Adiconar Descrição" 
+            placeholder="Adiconar Tarefa" 
             value={textInput}
             onChangeText={(text)=>setTextInput(text)} 
 
           />
         </View>
-        <TouchableOpacity onPress={addDescricao} >
+        <TouchableOpacity onPress={addTodo} >
           <View style={styles.iconContainer}>
             <FontAwesomeIcon icon={faPlus} color={COLORS.white} size={30} />
           </View>
@@ -316,3 +324,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 });
+
+export default Home;
